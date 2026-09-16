@@ -33,8 +33,6 @@ Module-level constants (SI units unless noted):
     E0 (float): Vacuum permittivity, F/m.
 """
 
-
-
 import numpy as np
 import math
 
@@ -156,7 +154,9 @@ def semilog_IV(
     """
     isat_end_index = find_vf_idx(curve[1]) - 3
     i_sat = np.average(curve[1][:isat_end_index])
-    current = curve[1] - i_sat  # subtract ion saturation current so all non-negative vals
+    current = (
+        curve[1] - i_sat
+    )  # subtract ion saturation current so all non-negative vals
     ln_current = np.log(current)  # take natural log
     x_voltage, ln_current = clean_array(curve[0], ln_current)
 
