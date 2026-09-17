@@ -1,3 +1,49 @@
+"""
+Langmuir_Analysis_GUI.py
+
+Tkinter GUI application, run as main, for semi-automated analysis of
+Langmuir probe data. Ties together Parse_Data (loading saved
+current/voltage arrays and writing results), Langmuir_Analysis (Te/Vp/n0
+fitting), and Plot_Curves (IV and raw-curve plotting) into an interactive
+frame-by-frame workflow: users open a data folder, step through frames
+via slider/keyboard/buttons, adjust Te/Vp fit index ranges per frame
+(manually or via auto-search), and export computed parameters to CSV.
+
+Supports two acquisition methods ("Differential" and "Opa") and two auto-
+processing modes: per-frame index-based reprocessing (update_all_params)
+and fixed-voltage-range reprocessing propagated across frames
+(auto_process_data / push_indices).
+
+Module-level state:
+    currents, voltages, x_axis, indices (list/np.ndarray): Loaded data
+        arrays for the currently open folder; indices holds per-frame
+        [Te_low, Te_high, Vp_low, Vp_high] fit index bounds.
+    curr_frame (int): Index of the currently displayed frame.
+    frame_rate (int): Step size used by prev_frame/next_frame; also
+        toggled based on whether the loaded data is "Afterglow" data.
+    max_idx (int): Upper bound used when validating fit index adjustments
+        (see change_fit_index); reset per-frame in update_curve_graphs.
+    probe_w (float): Probe diameter (m), shared across both acquisition
+        methods.
+    diff_probe_l, opa_probe_l (float): Probe tip lengths (m) for the
+        Differential and Opa acquisition methods, respectively.
+    starting_frame (bool): Flag indicating the very first frame render
+        after opening a folder, consulted by round_to_multiple and
+        update_curve_graphs to alter their behavior.
+    attributes_arr (list): Per-frame computed results
+        [descriptor, Te, Te_r2, Vp, Vp_rmse, n0, Vf, i_sat], accumulated
+        as frames are processed and exported via save_data /
+        auto_process_data / update_all_params.
+    fol (str or pathlib.Path): Currently open data folder; initialized to
+        the string "TestData" rather than a Path, unlike its reassignment
+        to a Path object in open_folder.
+
+Note: this module relies heavily on module-level globals read and
+mutated across many functions rather than passed explicitly (see
+individual function docstrings for each function's specific
+reads/writes) — behavior of any single function here generally cannot be
+understood without this shared state.
+"""
 import tkinter as tk
 import numpy as np
 from pathlib import Path
@@ -153,7 +199,7 @@ def start_semiauto_analysis(num_frames: int) -> None:
 
 def get_probe_length() -> float:
     """
-    Return the probe shaft length corresponding to the currently selected
+    Return the probe tip length corresponding to the currently selected
     acquisition method (Differential vs. Opa).
 
     Returns:
